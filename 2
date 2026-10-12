@@ -1,0 +1,89 @@
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Discretize;
+import weka.filters.unsupervised.instance.Resample;
+import weka.core.converters.ArffSaver;
+import java.io.File;
+
+public class WekaPreprocessing {
+
+    public static void main(String[] args) throws Exception {
+
+        String[] datasets = {
+            "weather.nominal.arff",
+            "iris.arff",
+            "glass.arff"
+        };
+
+        for (String filename : datasets) {
+
+            System.out.println("\nDataset: " + filename);
+
+            // Load dataset
+            Instances data = DataSource.read(filename);
+
+            // Display original dataset information
+            System.out.println("Original records: "
+                    + data.numInstances());
+            System.out.println("Original attributes: "
+                    + data.numAttributes());
+
+            // Apply Discretize filter
+            Discretize discretize = new Discretize();
+            discretize.setInputFormat(data);
+
+            Instances discreteData =
+                    Filter.useFilter(data, discretize);
+
+            System.out.println("\nAfter Discretization:");
+            System.out.println("Records: "
+                    + discreteData.numInstances());
+            System.out.println("Attributes: "
+                    + discreteData.numAttributes());
+
+            saveData(discreteData,
+                    getName(filename) + "_discretized.arff");
+
+            // Apply Resample filter
+            Resample resample = new Resample();
+            resample.setRandomSeed(1);
+            resample.setSampleSizePercent(100);
+            resample.setNoReplacement(true);
+            resample.setInputFormat(data);
+
+            Instances sampledData =
+                    Filter.useFilter(data, resample);
+
+            System.out.println("\nAfter Resampling:");
+            System.out.println("Records: "
+                    + sampledData.numInstances());
+            System.out.println("Attributes: "
+                    + sampledData.numAttributes());
+
+            saveData(sampledData,
+                    getName(filename) + "_resampled.arff");
+
+            System.out.println("Processing completed.");
+        }
+    }
+
+    static void saveData(Instances data, String filename)
+            throws Exception {
+
+        ArffSaver saver = new ArffSaver();
+        saver.setInstances(data);
+        saver.setFile(new File(filename));
+        saver.writeBatch();
+
+        System.out.println("Saved file: " + filename);
+    }
+
+    static String getName(String filename) {
+        int index = filename.lastIndexOf('.');
+        if (index == -1) {
+            return filename;
+        }
+        return filename.substring(0, index);
+    }
+}
